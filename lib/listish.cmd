@@ -1,4 +1,4 @@
-setlocal EnableDelayedExpansion & : [options, list, out]
+setlocal EnableDelayedExpansion & :: [options, list, out]
 	set options=%1
 	set list=%2
 	set out=%3
@@ -9,7 +9,7 @@ setlocal EnableDelayedExpansion & : [options, list, out]
 	call lib\get_cursor_pos pos_x, pos_y
 	echo|set /p "=%ESC%[?25l"
 
-	: args
+	:: args
 	set width=50
 	set height=3
 	set up_ch=w
@@ -18,9 +18,13 @@ setlocal EnableDelayedExpansion & : [options, list, out]
 
 	set sel_cl=41;30
 	set sel_align=center
+	set "sel_left=-> "
+	set "sel_right= <-"
 
 	set unsel_cl=42;30
 	set unsel_align=right
+	set "unsel_left=--- "
+	set "unsel_right= ---"
 
 	set sel=1
 	set scroll=0
@@ -32,7 +36,7 @@ setlocal EnableDelayedExpansion & : [options, list, out]
 		goto process-args
 	)
 
-	: items
+	:: process items
 	set item_y=0
 
 	for /l %%i in (1 1 !list_size!) do (
@@ -48,14 +52,19 @@ setlocal EnableDelayedExpansion & : [options, list, out]
 			set /a index=%%j - 1
 			set /a index=!index! * %width%
 
-			: make runtime variables (!) be called with %
-			for /f "tokens=1,2 delims= " %%a in ("!index! !width!") do (
+			rem make runtime variables (!) be called with %
+			for /f "tokens=1,2" %%a in ("!index! !width!") do (
 				set list-%%i-parts-%%j=!item:~%%a,%%b!
 			)
 		)
 	)
 
-	: display
+	call lib\str_len "%sel_left%", sel_left_len
+	call lib\str_len "%sel_right%", sel_right_len
+	call lib\str_len "%unsel_left%", unsel_left_len
+	call lib\str_len "%unsel_right%", unsel_right_len
+
+	:: display
 	:loop
 	call lib\set_cursor_pos %pos_x%, %pos_y%
 
@@ -73,10 +82,18 @@ setlocal EnableDelayedExpansion & : [options, list, out]
 		if defined true (
 			set align=%unsel_align%
 			set cl=%unsel_cl%
+			set "left=%unsel_left%"
+			set "right=%unsel_right%"
+			set left_len=%unsel_left_len%
+			set right_len=%unsel_right_len%
 
 			if !sel! == %%i (
 				set align=%sel_align%
 				set cl=%sel_cl%
+				set "left=%sel_left%"
+				set "right=%sel_right%"
+				set left_len=%sel_left_len%
+				set right_len=%sel_right_len%
 			)
 
 			for /l %%j in (1 1 !list-%%i-size!) do (
@@ -86,14 +103,21 @@ setlocal EnableDelayedExpansion & : [options, list, out]
 					set part=!list-%%i-parts-%%j!
 					set /a displayed_h+=1
 
-					call lib\str_align "!part!", !align!, %width%, text
-					call lib\cecho {!cl!}!text!{}
+					if %%j == 1 (
+						set /a inside_width=%width% - !left_len! - !right_len!
+						call lib\str_align "!part!", !align!, !inside_width!, text
+						set text=!left!!text!!right!
+					) else (
+						call lib\str_align "!part!", !align!, %width%, text
+					)
+
+					echo %ESC%[!cl!m!text!%esc%[m
 				)
 			)
 		)
 	)
 
-	: choose
+	:: choose
 	set "choice_list=%sel_ch%"
 
 	if !sel! gtr 1 set "choice_list=!choice_list!%up_ch%"
@@ -133,8 +157,6 @@ setlocal EnableDelayedExpansion & : [options, list, out]
 
 	if "%out%" neq "" (
 		call lib\list_i %list%, %sel%, %out%
-		exit /b 0
-	) else (
-		exit /b %sel%
 	)
+	exit /b %sel%
 )

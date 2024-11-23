@@ -1,4 +1,4 @@
-setlocal & : [x, y]
+setlocal & :: [x, y]
 	echo %ESC%[%2;%1H
 
 (

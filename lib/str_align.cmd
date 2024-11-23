@@ -1,4 +1,4 @@
-setlocal & : [str, align, width, out]
+setlocal & :: [str, align, width, out]
 	call lib\str_len "%~1", len
 
 	set str=%~1

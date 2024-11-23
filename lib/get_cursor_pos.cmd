@@ -1,4 +1,4 @@
-setlocal & : [x out, y out]
+setlocal & :: [x out, y out]
 	set x=
 	set y=
 

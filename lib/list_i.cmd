@@ -1,4 +1,4 @@
-setlocal EnableDelayedExpansion & : [list, index, out]
+setlocal EnableDelayedExpansion & :: [list, index, out]
 	set i=1
 	set res=
 
@@ -12,10 +12,8 @@ setlocal EnableDelayedExpansion & : [list, index, out]
 	)
 	:end
 
-	if !i! lss %2 (
-		: list smaller than index
-		exit /b 1
-	)
+	:: list smaller than index
+	if !i! lss %2 exit /b 1
 (
 	endlocal
 	set %3=%res%
