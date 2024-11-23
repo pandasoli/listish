@@ -34,3 +34,9 @@ And doing so as first parameters it expects some attributes:
 - `unsel_right`: Text to show on the right of unselected item
 - `sel`: Initial selected item
 - `scroll`: Initial scroll position
+
+<div align=center>
+  
+A look example:  
+![img](https://github.com/user-attachments/assets/2d4310f2-da71-48f3-883a-c977a3ec0063)
+</div>
