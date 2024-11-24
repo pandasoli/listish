@@ -12,6 +12,8 @@ setlocal EnableDelayedExpansion & :: [options, list, out]
 	:: args
 	set width=50
 	set height=3
+	set pos_x=2
+	set pos_y=3
 	set up_ch=w
 	set down_ch=s
 	set sel_ch=d
@@ -37,38 +39,53 @@ setlocal EnableDelayedExpansion & :: [options, list, out]
 	)
 
 	:: process items
-	set item_y=0
-
-	for /l %%i in (1 1 !list_size!) do (
-		call lib\list_i %list%, %%i, item
-		call lib\str_len "!item!", len
-
-		set /a parts=!len! / %width% + 1
-		set list-%%i-size=!parts!
-		set list-%%i-y=!item_y!
-		set /a item_y+=!parts!
-
-		for /l %%j in (1 1 !parts!) do (
-			set /a index=%%j - 1
-			set /a index=!index! * %width%
-
-			rem make runtime variables (!) be called with %
-			for /f "tokens=1,2" %%a in ("!index! !width!") do (
-				set list-%%i-parts-%%j=!item:~%%a,%%b!
-			)
-		)
-	)
-
 	call lib\str_len "%sel_left%", sel_left_len
 	call lib\str_len "%sel_right%", sel_right_len
 	call lib\str_len "%unsel_left%", unsel_left_len
 	call lib\str_len "%unsel_right%", unsel_right_len
 
+	set item_y=0
+	set box_width=
+
+	(
+		set /a sel_width=%width% - !sel_left_len! - !sel_right_len!
+		set /a unsel_width=%width% - !unsel_left_len! - !unsel_right_len!
+
+		if !sel_width! gtr !unsel_width! (
+			set box_width=!sel_width!
+		) else set box_width=!unsel_width!
+	)
+
+	for /l %%i in (1 1 !list_size!) do (
+		call lib\list_i %list%, %%i, item
+		call lib\str_len "!item!", len
+
+		set /a parts=!len! / !box_width! + 1
+		set list-%%i-size=!parts!
+		set list-%%i-y=!item_y!
+		set /a item_y+=!parts!
+
+		rem height cannot fit an item
+		if !parts! gtr %height% exit /b 0
+
+		set /a part_size=!len! / !parts!
+
+		for /l %%j in (1 1 !parts!) do (
+			set /a index=%%j - 1
+			set /a index=!index! * !part_size!
+
+			rem make runtime variables (!) be called with %
+			for /f "tokens=1,2" %%a in ("!index! !part_size!") do (
+				set list-%%i-parts-%%j=!item:~%%a,%%b!
+			)
+		)
+	)
+
 	:: display
 	:loop
+	cls
 	call lib\set_cursor_pos %pos_x%, %pos_y%
 
-	set /a displayed_h=!scroll!
 	set /a view_bottom=!scroll! + %height%
 
 	for /l %%i in (1 1 !list_size!) do (
@@ -76,7 +93,7 @@ setlocal EnableDelayedExpansion & :: [options, list, out]
 		set top=!list-%%i-y!
 		set /a bottom=!list-%%i-y! + !list-%%i-size!
 
-		if !top! gtr !scroll! if !top! lss !view_bottom! set true=1
+		if !top! geq !scroll! if !top! lss !view_bottom! set true=1
 		if !bottom! gtr !scroll! if !bottom! lss !view_bottom! set true=1
 
 		if defined true (
@@ -101,17 +118,21 @@ setlocal EnableDelayedExpansion & :: [options, list, out]
 
 				if !pos! gtr !scroll! if !pos! leq !view_bottom! (
 					set part=!list-%%i-parts-%%j!
-					set /a displayed_h+=1
+					set /a inside_width=%width% - !left_len! - !right_len!
 
 					if %%j == 1 (
-						set /a inside_width=%width% - !left_len! - !right_len!
 						call lib\str_align "!part!", !align!, !inside_width!, text
 						set text=!left!!text!!right!
-					) else (
+					) else if %%i == !sel! (
 						call lib\str_align "!part!", !align!, %width%, text
+					) else (
+						call lib\str_align "!part!", !align!, !inside_width!, text
+						call lib\ch_repeat " ", !left_len!, left_space
+						call lib\ch_repeat " ", !right_len!, right_space
+						set text=!left_space!!text!!right_space!
 					)
 
-					echo %ESC%[!cl!m!text!%esc%[m
+					echo %ESC%[!cl!m!text!%ESC%[m
 				)
 			)
 		)
@@ -130,11 +151,13 @@ setlocal EnableDelayedExpansion & :: [options, list, out]
 	call lib\str_contains %up_ch%, !ch!, isup
 	call lib\str_contains %down_ch%, !ch!, isdown
 
+	rem I'm too tired to think about a more
+	rem universal way of resetting the scroll
 	if !isup! == yes (
 		set /a sel-=1
 
 		for %%a in (!sel!) do (
-			if !list-%%a-y! lss !scroll! set /a scroll-=!list-%%a-size!
+			if !list-%%a-y! lss !scroll! set /a scroll=!list-%%a-y!
 		)
 
 		goto loop
