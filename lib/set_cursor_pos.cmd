@@ -1,5 +1,5 @@
 setlocal & :: [x, y]
-	echo %ESC%[%2;%1H
+	echo|set/p "=%ESC%[%2;%1H"
 
 (
 	endlocal
