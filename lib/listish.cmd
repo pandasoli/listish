@@ -95,8 +95,6 @@ setlocal EnableDelayedExpansion & :: [options, list, out]
 		if !bottom! gtr !scroll! if !bottom! lss !view_bottom! set true=1
 
 		if defined true (
-			call lib\set_cursor_pos %pos_x%, !display_y!
-
 			set align=%unsel_align%
 			set cl=%unsel_cl%
 			set "left=%unsel_left%"
@@ -119,7 +117,6 @@ setlocal EnableDelayedExpansion & :: [options, list, out]
 				if !pos! gtr !scroll! if !pos! leq !view_bottom! (
 					set part=!list-%%i-parts-%%j!
 					set /a inside_width=%width% - !left_len! - !right_len!
-					set /a display_y+=1
 
 					if %%j == 1 (
 						call lib\str_align "!part!", !align!, !inside_width!, text
@@ -133,7 +130,10 @@ setlocal EnableDelayedExpansion & :: [options, list, out]
 						set text=!left_space!!text!!right_space!
 					)
 
+					call lib\set_cursor_pos %pos_x%, !display_y!
 					echo %ESC%[!cl!m!text!%ESC%[m
+
+					set /a display_y+=1
 				)
 			)
 		)
